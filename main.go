@@ -5,44 +5,47 @@ import (
 	"fmt"
 	"log"
 	"net/http"
-	"io"
-	"io/ioutil"
 	"github.com/julienschmidt/httprouter"
+	"io/ioutil"
 )
 
 func Index(w http.ResponseWriter, r *http.Request, _ httprouter.Params) {
-	fmt.Fprint(w, "Welcome!\n")
-}
-type CalculateParams struct {
-	aParam   int `json:"a"`
-	bParam  int `json:"b"`
+	fmt.Fprint(w, "Welcome to Meant4")
 }
 
 type JsonResponse struct {
 	Data interface{} `json:"data"`
 	Status interface{} `json:"status"`
 }
+type CalculateParams struct {
+	AInput   int64  `json:"a"`
+	BInput int64 `json:"b"`
+}
 
-func CalculateFactorial(rw http.ResponseWriter, r *http.Request, hp httprouter.Params) {
-	var calculateParams CalculateParams
-
-    fmt.Fprintln(rw, "Calculating Factorial")
-	body, err := ioutil.ReadAll(io.LimitReader(r.Body, 1048576))
-    if err != nil {
-        log.Fatal(err)
-    }
-    if err := r.Body.Close(); err != nil {
-        log.Fatal(err)
-    }
-    if err := json.Unmarshal(body,calculateParams); err != nil {
-		response := &JsonResponse{Data: &calculateParams}
-		rw.Header().Set("Content-Type", "application/json; charset=UTF-8")
-		rw.WriteHeader(http.StatusOK)
-		if err := json.NewEncoder(rw).Encode(response); err != nil {
-			panic(err)
-		}
-    }
- 
+func CalculateFactorial(w http.ResponseWriter, r *http.Request, hp httprouter.Params) {
+	b, err := ioutil.ReadAll(r.Body)
+	defer r.Body.Close()
+	if err != nil {
+		http.Error(w, err.Error(), 500)
+		return
+	}
+	var msg CalculateParams
+	err = json.Unmarshal(b, &msg)
+	if err != nil {
+	response := &JsonResponse{Status:"Error",Data: "Incorrect Input"}
+	w.Header().Set("Content-Type", "application/json; charset=UTF-8")
+	w.WriteHeader(http.StatusBadRequest)
+	if err := json.NewEncoder(w).Encode(response); err != nil {
+		panic(err)
+	} 
+	return
+	}
+	response := &JsonResponse{Status:"Success",Data: "Success"}
+	w.Header().Set("Content-Type", "application/json; charset=UTF-8")
+	w.WriteHeader(http.StatusCreated)
+	if err := json.NewEncoder(w).Encode(response); err != nil {
+		panic(err)
+	} 
 }
 
 
